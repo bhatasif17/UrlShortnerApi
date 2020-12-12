@@ -59,15 +59,21 @@ namespace URLShortner
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-                app.UseSwagger();
+
                 // app.UseSwaggerUI(
                 //   c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "URLShortner v1"));
-                app.UseSwaggerUI(c =>
-                {
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "URLShortner v1");
-                    c.RoutePrefix = "swagger/ui";
-                });
+                //app.UseSwaggerUI(c =>
+                //{
+                //    c.SwaggerEndpoint("/swagger/v1/swagger.json", "URLShortner v1");
+                //    c.RoutePrefix = "swagger/ui";
+                //});
             }
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "URLShortner v1");
+                //c.RoutePrefix = "swagger/ui";
+            });
 
             app.UseHttpsRedirection();
 
