@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.PlatformAbstractions;
 using Microsoft.OpenApi.Models;
+using System.IO;
 using URLShortner.Domain;
 using URLShortner.Models;
 using URLShortner.Persistence;
@@ -23,10 +25,28 @@ namespace URLShortner
         {
 
             services.AddControllers();
-            services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "URL Shortner", Version = "v1" });
-            });
+            //services.AddSwaggerGen(c =>
+            //{
+            //    c.SwaggerDoc("v1", new OpenApiInfo { Title = "URL Shortner", Version = "v1" });
+            //});
+            _ = services.AddSwaggerGen(c =>
+              {
+                  c.SwaggerDoc("v1", new OpenApiInfo
+                  {
+                      Version = "v1",
+                      Title = "URl Shortner",
+                      Description = "Shortens the URLS for ease of use",
+                      //TermsOfService = "",
+                      Contact = new OpenApiContact { Name = "Asif Bhat", Email = "bhatasif17@gmail.com" },
+                      License = new OpenApiLicense { Name = "MIT License " }
+                  });
+
+                  // Set the comments path for the Swagger JSON and UI.
+                  var basePath = PlatformServices.Default.Application.ApplicationBasePath;
+                  var xmlPath = Path.Combine(basePath, "URLShortner.xml");
+                  c.IncludeXmlComments(xmlPath);
+              });
+
 
             services.AddScoped<IURLShortnerService, URLShortnerService>();
             services.AddScoped<IURLShortnerRepository, URLShortnerRepository>();
@@ -45,7 +65,7 @@ namespace URLShortner
                 app.UseSwaggerUI(c =>
                 {
                     c.SwaggerEndpoint("/swagger/v1/swagger.json", "URLShortner v1");
-                    c.RoutePrefix = "docs/swagger";
+                    c.RoutePrefix = "swagger/ui";
                 });
             }
 
