@@ -1,5 +1,8 @@
+using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -25,10 +28,6 @@ namespace URLShortner
         {
 
             services.AddControllers();
-            //services.AddSwaggerGen(c =>
-            //{
-            //    c.SwaggerDoc("v1", new OpenApiInfo { Title = "URL Shortner", Version = "v1" });
-            //});
             _ = services.AddSwaggerGen(c =>
               {
                   c.SwaggerDoc("v1", new OpenApiInfo
@@ -47,6 +46,27 @@ namespace URLShortner
                   c.IncludeXmlComments(xmlPath);
               });
 
+            //response time
+            services.AddHealthChecks()
+    .AddCheck<ResponseTimeHealthCheck>("Response Time");
+
+            //Db context
+            services.AddHealthChecks()
+                            .AddDbContextCheck<URLShortnerContext>();
+
+            services.AddDbContext<URLShortnerContext>(options =>
+            {
+                options.UseSqlServer(
+                    Configuration["ConnectionStrings:DefaultConnection"]);
+            });
+
+            //sql server
+            services.AddHealthChecks()
+    .AddSqlServer(Configuration["ConnectionStrings:DefaultConnection"]);
+
+
+            //services.AddHealthChecks().AddSqlServer(Configuration["DefaultConnection"]);
+            services.AddHealthChecksUI().AddInMemoryStorage();
 
             services.AddScoped<IURLShortnerService, URLShortnerService>();
             services.AddScoped<IURLShortnerRepository, URLShortnerRepository>();
@@ -59,14 +79,6 @@ namespace URLShortner
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-
-                // app.UseSwaggerUI(
-                //   c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "URLShortner v1"));
-                //app.UseSwaggerUI(c =>
-                //{
-                //    c.SwaggerEndpoint("/swagger/v1/swagger.json", "URLShortner v1");
-                //    c.RoutePrefix = "swagger/ui";
-                //});
             }
             app.UseSwagger();
             app.UseSwaggerUI(c =>
@@ -80,10 +92,30 @@ namespace URLShortner
             app.UseRouting();
 
             app.UseAuthorization();
-
+            app.UseHealthChecksUI();
             app.UseEndpoints(endpoints =>
             {
+                //for overall health check 
+                endpoints.MapHealthChecks("quickHealth", new HealthCheckOptions()
+                {
+                    Predicate = _ => false
+                });
+
+                endpoints.MapHealthChecks("healthServices", new HealthCheckOptions()
+                {
+                    Predicate = reg => reg.Tags.Contains("service"),
+                    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+                });
+                //for json formatted health check
+                endpoints.MapHealthChecks("health", new HealthCheckOptions()
+                {
+                    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+                });
+
                 endpoints.MapControllers();
+                endpoints.MapHealthChecksUI();
+
+
             });
         }
     }
